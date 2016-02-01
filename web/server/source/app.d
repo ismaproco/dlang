@@ -1,19 +1,25 @@
-import vibe.d;
+import vibe.appmain;
+import vibe.http.fileserver;
+import vibe.http.router;
+import vibe.http.server;
+
+void handleRequest(scope HTTPServerRequest req, scope HTTPServerResponse res)
+{
+	res.redirect("/index.html");
+}
 
 shared static this()
 {
-	// Create the router that will dispatch each request to the proper handler method
-	auto router = new URLRouter;
-	
-	// All requests that haven't been handled by the web interface registered above
-	// will be handled by looking for a matching file in the public/ folder.
-	router.get("*", serveStaticFiles("public/"));
-	router.get("/", serveStaticFiles("public/index.html"));
-	
 	auto settings = new HTTPServerSettings;
 	settings.port = 8080;
 	settings.bindAddresses = ["::1", "127.0.0.1"];
-	
+
+	auto router = new URLRouter;
+	router.get("/", &handleRequest);
+	auto fileServerSettings = new HTTPFileServerSettings;
+	fileServerSettings.encodingFileExtension = ["gzip" : ".gz"];
+	router.get("/gzip/*", serveStaticFiles("./public/", fileServerSettings));
+	router.get("*", serveStaticFiles("./public/",));
+
 	listenHTTP(settings, router);
-	logInfo("Please open http://127.0.0.1:8080/ in your browser.");
 }
